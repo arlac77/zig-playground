@@ -188,7 +188,7 @@ test stripComponents {
     const expectEqualStrings = std.testing.expectEqualStrings;
     try expectEqualStrings("a/b/c", try stripComponents("a/b/c", 0));
     try expectEqualStrings("b/c", try stripComponents("a/b/c", 1));
-    try expectEqualStrings("cx", try stripComponents("a/b/c", 2));
+    try expectEqualStrings("c", try stripComponents("a/b/c", 2));
 }
 
 const std = @import("std");
