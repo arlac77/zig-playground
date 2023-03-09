@@ -15,7 +15,7 @@ pub const Options = struct {
     };
 };
 
-const BLOCKSIZE = 512;
+pub const BLOCKSIZE = 512;
 
 pub const Header = struct {
     bytes: *const [BLOCKSIZE]u8,
@@ -102,16 +102,16 @@ pub fn pipeToFileSystem(dir: std.fs.Dir, reader: anytype, options: Options) !voi
     var start: usize = 0;
     var end: usize = 0;
     header: while (true) {
-        if (buffer.len - start < 1024) {
+        if (buffer.len - start < 2 * BLOCKSIZE) {
             std.mem.copy(u8, &buffer, buffer[start..end]);
             end -= start;
             start = 0;
         }
-        const ask_header = @min(buffer.len - end, 1024 -| (end - start));
+        const ask_header = @min(buffer.len - end, 2 * BLOCKSIZE -| (end - start));
         end += try reader.readAtLeast(buffer[end..], ask_header);
         switch (end - start) {
             0 => return,
-            1...511 => return error.UnexpectedEndOfStream,
+            1...BLOCKSIZE - 1 => return error.UnexpectedEndOfStream,
             else => {},
         }
         const header: Header = .{ .bytes = buffer[start..][0..BLOCKSIZE] };
@@ -136,7 +136,7 @@ pub fn pipeToFileSystem(dir: std.fs.Dir, reader: anytype, options: Options) !voi
 
                 var file_off: usize = 0;
                 while (true) {
-                    if (buffer.len - start < 1024) {
+                    if (buffer.len - start < 2 * BLOCKSIZE) {
                         std.mem.copy(u8, &buffer, buffer[start..end]);
                         end -= start;
                         start = 0;
