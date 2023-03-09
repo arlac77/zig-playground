@@ -15,8 +15,10 @@ pub const Options = struct {
     };
 };
 
+const BLOCKSIZE = 512;
+
 pub const Header = struct {
-    bytes: *const [512]u8,
+    bytes: *const [BLOCKSIZE]u8,
 
     pub const FileType = enum(u8) {
         normal = '0',
@@ -96,7 +98,7 @@ pub fn pipeToFileSystem(dir: std.fs.Dir, reader: anytype, options: Options) !voi
         },
     }
     var file_name_buffer: [255]u8 = undefined;
-    var buffer: [512 * 8]u8 = undefined;
+    var buffer: [BLOCKSIZE * 8]u8 = undefined;
     var start: usize = 0;
     var end: usize = 0;
     header: while (true) {
@@ -112,8 +114,8 @@ pub fn pipeToFileSystem(dir: std.fs.Dir, reader: anytype, options: Options) !voi
             1...511 => return error.UnexpectedEndOfStream,
             else => {},
         }
-        const header: Header = .{ .bytes = buffer[start..][0..512] };
-        start += 512;
+        const header: Header = .{ .bytes = buffer[start..][0..BLOCKSIZE] };
+        start += BLOCKSIZE;
         const file_size = try header.fileSize();
         const rounded_file_size = std.mem.alignForwardGeneric(u64, file_size, 512);
         const pad_len = @intCast(usize, rounded_file_size - file_size);
@@ -143,7 +145,7 @@ pub fn pipeToFileSystem(dir: std.fs.Dir, reader: anytype, options: Options) !voi
                     // TODO: https://github.com/ziglang/zig/issues/14039
                     const ask = @intCast(usize, @min(
                         buffer.len - end,
-                        rounded_file_size + 512 - file_off -| (end - start),
+                        rounded_file_size + BLOCKSIZE - file_off -| (end - start),
                     ));
                     end += try reader.readAtLeast(buffer[end..], ask);
                     if (end - start < ask) return error.UnexpectedEndOfStream;
