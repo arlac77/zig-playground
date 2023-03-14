@@ -85,6 +85,25 @@ pub const Header = struct {
     }
 };
 
+test "sample.tar is_ustar" {
+    var arena_state = std.heap.ArenaAllocator.init(std.heap.c_allocator);
+    defer arena_state.deinit();
+
+    const allocator = arena_state.allocator();
+
+    var path_buffer: [std.fs.MAX_PATH_BYTES]u8 = undefined;
+    const path = try std.fs.realpath("./src/sample.tar", &path_buffer);
+
+    const file = try std.fs.openFileAbsolute(path, .{  });
+    defer file.close();
+
+    const buffer_size = 2000;
+    const file_buffer = try file.readToEndAlloc(allocator, buffer_size);
+    defer allocator.free(file_buffer);
+
+    try std.testing.expect(try Header.is_ustar(@as(file_buffer)));
+}
+
 pub fn pipeToFileSystem(dir: std.fs.Dir, reader: anytype, options: Options) !void {
     switch (options.mode_mode) {
         .ignore => {},
